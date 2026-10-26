@@ -172,7 +172,7 @@
   function statText(key, s) {
     if (key === 'atk') return fmt(s.atk);
     if (key === 'hp') return fmt(s.maxHp);
-    if (key === 'def') return '받는 피해 -' + Math.round((1 - s.taken) * 100) + '%';
+    if (key === 'def') return '피해 -' + Math.round((1 - s.taken) * 100) + '%';
     if (key === 'crit') return Math.round(s.crit * 100) + '%';
     if (key === 'critDmg') return Math.round(s.critMul * 100) + '%';
     return s.spd.toFixed(2) + '회/초';
@@ -447,6 +447,19 @@
   }
 
   $('hero').onclick = () => showModal(statusModal);
+
+  // 아래 칸 크게 보기 (무대를 접고 목록을 위로) — 고른 것은 다음에 켤 때도 기억
+  function setBig(on) {
+    $('app').classList.toggle('wide', on);
+    try { localStorage.setItem('hyeolma.big', on ? '1' : ''); } catch (e) {}
+    bigLabel();
+  }
+  function bigLabel() {
+    const on = $('app').classList.contains('wide');
+    $('btnExpand').textContent = on ? `▼ 무대 보기 · ${st.floor}층${st.autoUp ? '' : ' (도전 멈춤)'}` : '▲ 크게 보기';
+  }
+  $('btnExpand').onclick = () => setBig(!$('app').classList.contains('wide'));
+  try { if (localStorage.getItem('hyeolma.big')) setBig(true); } catch (e) {}
   $('btnChallenge').onclick = () => { HM.challenge(st, b); drawMob(); toast(`⏫ ${st.floor}층 다시 도전!`); };
 
   // ── 돌아가는 고리
@@ -458,7 +471,7 @@
     while (dt > 0) { const d = Math.min(0.05, dt); HM.step(st, b, d, ev); dt -= d; }
     if (ev.length) handle(ev);
     if (!modalOpen) openNext();
-    if (now - lastHud > 100) { hud(); lastHud = now; }
+    if (now - lastHud > 100) { hud(); bigLabel(); lastHud = now; }
     requestAnimationFrame(loop);
   }
 

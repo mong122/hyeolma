@@ -1,6 +1,6 @@
 // 혈마 키우기 — 인터넷 없이도 켜지게 파일을 폰에 담아 둠
 // 새 판을 올리면 CACHE 이름의 숫자를 올림
-const CACHE = 'hyeolma-0.1.1';
+const CACHE = 'hyeolma-0.1.2';
 const FILES = ['./', 'index.html', 'style.css', 'js/data.js', 'js/core.js', 'js/ui.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {

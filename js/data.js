@@ -1,7 +1,7 @@
 // 혈마 키우기 — 숫자·카드·몬스터 자료 (화면과 상관없는 것만)
 var HM = (typeof HM !== 'undefined') ? HM : {};
 
-HM.VERSION = '0.1.1';
+HM.VERSION = '0.1.2';
 
 // 균형 숫자 (여기만 고치면 게임 빠르기가 바뀜)
 HM.B = {
