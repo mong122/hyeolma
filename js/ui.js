@@ -172,32 +172,50 @@
   function statText(key, s) {
     if (key === 'atk') return fmt(s.atk);
     if (key === 'hp') return fmt(s.maxHp);
+    if (key === 'def') return '받는 피해 -' + Math.round((1 - s.taken) * 100) + '%';
+    if (key === 'crit') return Math.round(s.crit * 100) + '%';
+    if (key === 'critDmg') return Math.round(s.critMul * 100) + '%';
     return s.spd.toFixed(2) + '회/초';
   }
   function renderTab() {
     const box = $('tabBody');
     if (curTab === 'up') {
-      box.innerHTML = `<div class="mult">${[1, 10, 'max'].map(m => `<button data-m="${m}" class="${m === mult ? 'on' : ''}">${m === 'max' ? '최대' : '×' + m}</button>`).join('')}</div>` +
+      box.innerHTML = `<div class="mult"><button class="info" id="openStat">📋 능력치</button><button class="info" id="openHelp">❓ 설명</button><span style="flex:1"></span>${[1, 10, 'max'].map(m => `<button data-m="${m}" class="${m === mult ? 'on' : ''}">${m === 'max' ? '최대' : '×' + m}</button>`).join('')}</div>` +
         Object.keys(HM.UPS).map(k => `<div class="row"><div class="ic">${HM.UPS[k].emoji}</div>
           <div class="info"><b>${HM.UPS[k].name} <span id="ul_${k}"></span></b><small id="uv_${k}"></small></div>
           <button class="buy" id="ub_${k}"></button></div>`).join('') +
-        `<div class="statLine" id="statLine"></div>
-         <div class="note" style="padding:6px">꾹 누르고 있으면 계속 올라가요</div>`;
+        `<div class="note" style="padding:6px">꾹 누르고 있으면 계속 올라가요</div>`;
       box.querySelectorAll('.mult button').forEach(el => el.onclick = () => {
         mult = el.dataset.m === 'max' ? 'max' : +el.dataset.m; renderTab();
       });
       for (const k in HM.UPS) holdBuy($('ub_' + k), k);
+      $('openStat').onclick = () => showModal(statusModal);
+      $('openHelp').onclick = () => showModal(helpModal);
       updateTab();
     } else if (curTab === 'cards') {
       const ids = Object.keys(st.cards);
-      const combos = HM.CARDS.filter(c => c.combo).map(c => {
-        const n = HM.tagCount(st, c.combo.tag);
-        return `<div class="combo">${c.emoji} <b>${c.name}</b> — ${c.combo.tag} 카드 ${Math.min(n, c.combo.need)}/${c.combo.need} ${st.cards[c.id] ? '✔ 완성' : n >= c.combo.need ? '→ 다음 카드에 나와요' : ''}</div>`;
-      }).join('');
-      box.innerHTML = combos + (ids.length ? `<div class="cardGrid">${ids.map(id => {
-        const c = HM.CARD[id];
-        return `<div class="mini ${HM.RAR[c.rar].cls}"><div class="n">×${st.cards[id]}</div><div class="e">${c.emoji}</div><b>${c.name}</b><br><small style="color:var(--dim)">${c.desc}</small></div>`;
-      }).join('')}</div>` : '<div class="note">아직 카드가 없어요.<br>레벨이 오르면 카드 3장 중 1장을 골라요.</div>');
+      const seenN = HM.CARDS.filter(c => st.seen[c.id]).length;
+      let html = `<div class="mult" style="justify-content:flex-start">
+        <button data-v="mine" class="${cardView === 'mine' ? 'on' : ''}">내 카드 ${ids.length}종</button>
+        <button data-v="book" class="${cardView === 'book' ? 'on' : ''}">📚 도감 ${seenN}/${HM.CARDS.length}</button></div>`;
+      if (cardView === 'mine') {
+        html += HM.CARDS.filter(c => c.combo).map(c => {
+          const n = HM.tagCount(st, c.combo.tag);
+          return `<div class="combo">${c.emoji} <b>${c.name}</b> — ${c.combo.tag} 카드 ${Math.min(n, c.combo.need)}/${c.combo.need} ${st.cards[c.id] ? '✔ 완성' : n >= c.combo.need ? '→ 다음 카드에 나와요' : ''}</div>`;
+        }).join('');
+        html += ids.length ? `<div class="cardGrid">${ids.map(id => miniCard(HM.CARD[id], st.cards[id], true)).join('')}</div>`
+          : '<div class="note">아직 카드가 없어요.<br>레벨이 오르면 카드 3장 중 1장을 골라요.</div>';
+      } else {
+        html += `<div class="note" style="padding:4px 0 10px">한 번이라도 얻은 카드는 밝게 보여요 (회귀해도 도감은 남아요)</div>`;
+        [['정', '🟦 정파 무공 — 안전·꾸준'], ['혈', '🟥 혈공 — 세지만 체력을 깎음']].forEach(([side, title]) => {
+          html += `<h4 class="bookH">${title}</h4><div class="cardGrid">${HM.CARDS.filter(c => c.side === side && !c.combo)
+            .map(c => miniCard(c, 0, !!st.seen[c.id])).join('')}</div>`;
+        });
+        html += `<h4 class="bookH">✨ 조합 카드 — 조건을 채우면 다음 카드에 꼭 나와요</h4><div class="cardGrid">${HM.CARDS.filter(c => c.combo)
+          .map(c => miniCard(c, 0, !!st.seen[c.id], `${c.combo.tag} 카드 ${c.combo.need}장`)).join('')}</div>`;
+      }
+      box.innerHTML = html;
+      box.querySelectorAll('[data-v]').forEach(el => el.onclick = () => { cardView = el.dataset.v; renderTab(); });
     } else if (curTab === 'dungeon') {
       box.innerHTML = `<div class="note">🔒 던전은 3판에서 열려요<br><br>🥋 비무대회 · ☯️ 오행 수련장<br>👹 마두 토벌 · 🗼 심마의 탑</div>`;
     } else {
@@ -205,12 +223,14 @@
       box.innerHTML = `
         <div class="row"><div class="ic">📊</div><div class="info"><b>내 기록</b>
           <small>최고 ${st.maxFloor}층 · 잡은 몬스터 ${fmt(r.kills)} · 고른 카드 ${r.cardsPicked}장 · 논 시간 ${Math.floor(r.playSec / 60)}분</small></div></div>
+        <div class="row"><div class="ic">📖</div><div class="info"><b>게임 설명</b><small>층·보스·강화·카드·스킬·방치</small></div><button class="buy" id="help2">보기</button></div>
         <div class="row"><div class="ic">📤</div><div class="info"><b>백업 코드 내보내기</b><small>복사해서 메모장·카톡에 붙여 두세요</small></div><button class="buy" id="exp">만들기</button></div>
         <div id="expBox"></div>
         <div class="row"><div class="ic">📥</div><div class="info"><b>백업 코드 불러오기</b><small>지금 진행은 지워지고 코드 상태로 바뀌어요</small></div><button class="buy" id="imp">붙여넣기</button></div>
         <div id="impBox"></div>
         <div class="row"><div class="ic">🗑</div><div class="info"><b>처음부터 다시</b><small>모든 진행이 지워져요</small></div><button class="buy" id="reset" style="background:#5a2a2a;color:#fff">지우기</button></div>
         <div class="note">혈마 키우기 ${HM.VERSION} · 1판</div>`;
+      $('help2').onclick = () => showModal(helpModal);
       $('exp').onclick = () => {
         save();
         const code = HM.exportCode(st);
@@ -244,6 +264,60 @@
     }
   }
   let replaced = false; // 불러오기·지우기 중엔 저장 안 함
+  let cardView = 'mine';
+
+  function miniCard(c, n, lit, need) {
+    return `<div class="mini ${HM.RAR[c.rar].cls}${lit ? '' : ' dim'}">${n ? '<div class="n">×' + n + '</div>' : ''}
+      <div class="e">${c.emoji}</div><b>${c.name}</b>
+      <div class="tg"><span class="rt ${HM.RAR[c.rar].cls}">${HM.RAR[c.rar].name}</span>${c.max ? ' · ' + c.max + '장까지' : ''}</div>
+      <small>${c.desc}${need ? '<br>조건: ' + need : ''}</small></div>`;
+  }
+
+  // ── 내 능력치 창
+  function statusModal(box) {
+    const s = b.s, pct = x => Math.round(x * 100) + '%';
+    let f = st.floor; const mon = HM.monster(f);
+    const killSec = mon.hp / HM.dps(s);
+    const rows = [
+      ['⚔️', '초당 피해 (대략)', fmt(HM.dps(s)), '공격력·속도·치명·두 번 공격·출혈을 합친 값'],
+      ['🗡', '공격력', fmt(s.atk), '한 번 때릴 때 피해'],
+      ['❤️', '체력', fmt(b.hp) + ' / ' + fmt(s.maxHp), '0이 되면 쓰러져 한 층 아래로'],
+      ['🛡', '받는 피해', '-' + pct(1 - s.taken), '방어력 강화·카드로 줄어요'],
+      ['💨', '공격 속도', s.spd.toFixed(2) + '회/초', '최대 6회/초'],
+      ['🎯', '치명 확률', pct(s.crit), '최대 90%'],
+      ['💥', '치명 피해', pct(s.critMul), '치명타 때 공격력의 몇 배'],
+      s.dbl && ['⚔️', '두 번 공격', pct(s.dbl), '때릴 때 한 번 더 때릴 확률'],
+      s.regen && ['🧘', '체력 회복', pct(s.regen) + '/초', '최대 체력 기준'],
+      s.drain && ['🌊', '체력 깎임', pct(s.drain) + '/초', '혈공 대가 (깎임으로는 안 쓰러짐)'],
+      s.steal && ['🦇', '흡혈', pct(s.steal), '준 피해만큼 체력 회복'],
+      s.bleed && ['🩸', '출혈', pct(s.bleed * s.bleedMul) + '/초', '때리면 3초 동안 공격력의 이만큼씩 피해'],
+      s.bleedAmp && ['🌧', '출혈 적에게', '+' + pct(s.bleedAmp), '출혈 걸린 적에게 더 주는 피해'],
+      s.berserk && ['😡', '광폭', '+' + pct(s.berserk), '체력 절반 아래면 공격력 더함'],
+      ['💰', '은자 보너스', '+' + pct(s.silverMul - 1), '카드로 늘어요'],
+      ['📜', '경험치 보너스', '+' + pct(s.expMul - 1), '카드로 늘어요'],
+      ['⭐', '레벨 보너스', '+' + pct(0.05 * (st.level - 1)), '레벨마다 공격력·체력 +5%']
+    ].filter(Boolean);
+    box.innerHTML = `<h2>📋 혈마 능력치</h2><p>Lv.${st.level} · ${st.floor}층 · 최고 ${st.maxFloor}층</p>
+      <div class="stats">${rows.map(r => `<div class="st"><span class="ic">${r[0]}</span><span class="nm">${r[1]}<small>${r[3]}</small></span><b>${r[2]}</b></div>`).join('')}</div>
+      <div class="combo" style="text-align:left;margin-top:10px">${mon.emoji} 지금 층 ${mon.boss ? '보스' : '몬스터'}: 체력 ${fmt(mon.hp)} · 공격 ${fmt(mon.atk * s.taken)} (1.5초마다)<br>
+        → 한 마리 잡는 데 약 ${killSec < 0.1 ? '0.1' : killSec.toFixed(1)}초${mon.boss ? ` (제한 ${HM.B.bossTime}초)` : ''}</div>
+      <button class="big dim" id="cl">닫기</button>`;
+    $('cl').onclick = closeModal;
+  }
+
+  // ── 게임 설명 창
+  function helpModal(box) {
+    const sec = (t, body) => `<h4 class="bookH">${t}</h4><div class="help">${body}</div>`;
+    box.innerHTML = `<h2>📖 게임 설명</h2>
+      ${sec('🏯 층과 보스', `혈마가 혼자 싸워요. 한 층에서 ${HM.B.killsPerFloor}마리를 잡으면 다음 층.<br>10층마다 보스 — ${HM.B.bossTime}초 안에 못 잡거나 쓰러지면 한 층 아래로 내려가 그 층에서 계속 수련해요.<br>세졌다 싶으면 무대 아래 <b>⏫ 다시 도전</b>.`)}
+      ${sec('💪 강화 (은자)', Object.values(HM.UPS).map(u => `${u.emoji} <b>${u.name}</b> — ${u.desc}${u.max < 9999 ? ` (최대 ${u.max}번)` : ''}`).join('<br>') + '<br>×10·최대 로 한 번에 · 꾹 누르면 계속')}
+      ${sec('🃏 레벨업 카드', `레벨이 오를 때마다 3장 중 1장. 이번 판에만 유효해요.<br>🟦 <b>정파 무공</b> = 안전·꾸준 · 🟥 <b>혈공</b> = 세지만 체력을 깎음<br>등급: <span class="rt r0">일반</span> · <span class="rt r1">희귀</span> · <span class="rt r2">영웅</span> · <span class="rt r3">전설</span><br>✨ 조합: 출혈 카드 3장 → 💥 출혈 폭발<br>📺 광고 보고 다시 뽑기 (카드 한 번에 한 번)`)}
+      ${sec('🩸 스킬', Object.values(HM.SKILLS).map(k => `${k.emoji} <b>${k.name}</b> — ${k.desc} (${k.cd}초마다)`).join('<br>') + '<br>"자동" 을 켜면 알아서 써요 (호신강기는 체력 60% 아래에서)')}
+      ${sec('🌙 방치', `꺼 둬도 지금 층에서 은자·경험치가 쌓여요 (최대 ${HM.B.offlineMaxH}시간).<br>📺 광고 보면 2배.`)}
+      ${sec('💾 저장', '폰 안에 저절로 저장돼요.<br>⚙ 설정 → 백업 코드를 복사해 두면 다른 폰에서 불러올 수 있어요.')}
+      <button class="big dim" id="cl">닫기</button>`;
+    $('cl').onclick = closeModal;
+  }
 
   // 강화 단추: 한 번 누르면 한 번, 꾹 누르면 계속
   function holdBuy(btn, key) {
@@ -277,13 +351,7 @@
       btn.textContent = lv >= u.max ? '최대' : `🪙 ${fmt(cost)}${r.count > 1 ? ' ×' + r.count : ''}`;
       btn.disabled = lv >= u.max || !r.count || cost > st.silver;
     }
-    $('statLine').innerHTML = [
-      s.crit ? `치명 ${Math.round(s.crit * 100)}%` : '', s.dbl ? `두 번 공격 ${Math.round(s.dbl * 100)}%` : '',
-      s.regen ? `회복 ${(s.regen * 100).toFixed(0)}%/초` : '', s.drain ? `<span style="color:#ff6b6b">깎임 ${(s.drain * 100).toFixed(0)}%/초</span>` : '',
-      s.bleed ? `출혈 ${Math.round(s.bleed * s.bleedMul * 100)}%/초` : '', s.steal ? `흡혈 ${Math.round(s.steal * 100)}%` : '',
-      s.taken < 1 ? `받는 피해 -${Math.round((1 - s.taken) * 100)}%` : '',
-      s.silverMul > 1 ? `은자 +${Math.round((s.silverMul - 1) * 100)}%` : '', s.expMul > 1 ? `경험치 +${Math.round((s.expMul - 1) * 100)}%` : ''
-    ].filter(Boolean).join('<span>·</span>');
+
   }
 
   // ── 무대 그리기
@@ -378,6 +446,7 @@
     updateTab();
   }
 
+  $('hero').onclick = () => showModal(statusModal);
   $('btnChallenge').onclick = () => { HM.challenge(st, b); drawMob(); toast(`⏫ ${st.floor}층 다시 도전!`); };
 
   // ── 돌아가는 고리

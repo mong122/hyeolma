@@ -24,8 +24,8 @@ var HM = (typeof HM !== 'undefined') ? HM : {};
     return {
       v: 1, cycle: 1, level: 1, exp: 0, silver: 0,
       floor: 1, maxFloor: 1, kills: 0, autoUp: true,
-      up: { atk: 0, hp: 0, spd: 0 },
-      cards: {}, pending: 0,
+      up: { atk: 0, hp: 0, def: 0, spd: 0, crit: 0, critDmg: 0 },
+      cards: {}, pending: 0, seen: {},
       autoSkill: { s1: false, s2: false },
       talked: {}, lastSave: Date.now(),
       rec: { kills: 0, playSec: 0, cardsPicked: 0 }
@@ -35,7 +35,7 @@ var HM = (typeof HM !== 'undefined') ? HM : {};
   // ── 지금 능력치 계산 (강화 + 레벨 + 카드)
   HM.calc = function (st) {
     const s = { atkMul: 1, hpMul: 1, spdMul: 1, regen: 0, taken: 1, silverMul: 1, expMul: 1,
-      dbl: 0, crit: 0, critMul: 3, steal: 0, bleed: 0, bleedMul: 1, bleedAmp: 0, berserk: 0, drain: 0 };
+      dbl: 0, crit: B.critBase, critMul: B.critMulBase, steal: 0, bleed: 0, bleedMul: 1, bleedAmp: 0, berserk: 0, drain: 0 };
     for (const id in st.cards) {
       const c = HM.CARD[id];
       if (!c) continue;
@@ -46,7 +46,9 @@ var HM = (typeof HM !== 'undefined') ? HM : {};
     s.atk = B.baseAtk * (1 + B.upLin * L.atk) * Math.pow(B.upPow, L.atk) * lv * s.atkMul;
     s.maxHp = B.baseHp * (1 + B.upLin * L.hp) * Math.pow(B.upPow, L.hp) * lv * Math.max(0.1, s.hpMul);
     s.spd = Math.min(6, B.baseSpd * (1 + 0.05 * L.spd) * s.spdMul);
-    s.crit = Math.min(0.9, s.crit);
+    s.taken /= 1 + 0.03 * L.def;
+    s.crit = Math.min(0.9, s.crit + 0.01 * L.crit);
+    s.critMul += 0.1 * L.critDmg;
     s.dbl = Math.min(0.9, s.dbl);
     return s;
   };
@@ -133,6 +135,7 @@ var HM = (typeof HM !== 'undefined') ? HM : {};
     st.cards[id] = (st.cards[id] || 0) + 1;
     st.pending = Math.max(0, st.pending - 1);
     st.rec.cardsPicked++;
+    st.seen[id] = 1;
   };
 
   // ── 전투 (저장 안 하는 순간 상태)
@@ -272,6 +275,9 @@ var HM = (typeof HM !== 'undefined') ? HM : {};
     b.mon = null; b.spawnT = 0.3; b.hp = b.s.maxHp;
   };
 
+  // 초당 피해 (대략, 출혈 포함)
+  HM.dps = s => s.atk * s.spd * (1 + s.dbl) * (1 + s.crit * (s.critMul - 1)) + s.atk * s.bleed * s.bleedMul;
+
   // ── 방치 보상: 꺼 둔 동안 지금 층(보스 층이면 한 층 아래)에서 잡았을 만큼
   HM.offline = function (st, sec) {
     const max = B.offlineMaxH * 3600;
@@ -279,7 +285,7 @@ var HM = (typeof HM !== 'undefined') ? HM : {};
     const s = HM.calc(st);
     let f = st.floor; if (HM.isBoss(f)) f = Math.max(1, f - 1);
     const hp = B.monHp0 * Math.pow(B.monHpGrow, f - 1);
-    const dps = s.atk * s.spd * (1 + s.dbl) * (1 + s.crit * (s.critMul - 1)) + s.atk * s.bleed * s.bleedMul;
+    const dps = HM.dps(s);
     const perKill = hp / dps + B.spawnGap;
     const kills = sec / perKill * B.offlineEff;
     const r = HM.reward(st, f, s);
@@ -306,6 +312,7 @@ var HM = (typeof HM !== 'undefined') ? HM : {};
     for (const k in base) if (st[k] === undefined) st[k] = base[k];
     for (const k in base.up) if (st.up[k] === undefined) st.up[k] = 0;
     for (const k in base.rec) if (st.rec[k] === undefined) st.rec[k] = 0;
+    for (const id in st.cards) st.seen[id] = 1;
     for (const k in base.autoSkill) if (st.autoSkill[k] === undefined) st.autoSkill[k] = false;
     return st;
   };

@@ -1,7 +1,7 @@
 // 혈마 키우기 — 숫자·카드·몬스터 자료 (화면과 상관없는 것만)
 var HM = (typeof HM !== 'undefined') ? HM : {};
 
-HM.VERSION = '0.1.0';
+HM.VERSION = '0.1.1';
 
 // 균형 숫자 (여기만 고치면 게임 빠르기가 바뀜)
 HM.B = {
@@ -18,14 +18,18 @@ HM.B = {
   lvExp0: 25, lvExpGrow: 1.4,                  // 다음 레벨까지 필요한 경험치
   offlineMaxH: 8, offlineEff: 0.5,              // 방치: 최대 시간 · 켜 둔 때 대비 몇 배
   upLin: 0.1, upPow: 1.03,                     // 강화 한 번에 늘어나는 정도
+  critBase: 0.05, critMulBase: 1.5,             // 처음 치명 확률·치명 피해 배수
   rarW: [60, 28, 10, 2]                         // 카드 등급 확률 (일반·희귀·영웅·전설)
 };
 
 // 강화 (은자로 올림)
 HM.UPS = {
-  atk: { name: '공격력', emoji: '🗡', cost0: 8, costGrow: 1.15, max: 99999 },
-  hp:  { name: '체력',   emoji: '❤️', cost0: 8, costGrow: 1.15, max: 99999 },
-  spd: { name: '공격 속도', emoji: '💨', cost0: 30, costGrow: 1.3, max: 40 }
+  atk:     { name: '공격력',    emoji: '🗡', cost0: 8,  costGrow: 1.15, max: 99999, desc: '한 번 때릴 때 피해' },
+  hp:      { name: '체력',      emoji: '❤️', cost0: 8,  costGrow: 1.15, max: 99999, desc: '0이 되면 쓰러져요' },
+  def:     { name: '방어력',    emoji: '🛡', cost0: 15, costGrow: 1.16, max: 99999, desc: '받는 피해가 줄어요' },
+  spd:     { name: '공격 속도', emoji: '💨', cost0: 30, costGrow: 1.3,  max: 40,    desc: '1초에 몇 번 때리나' },
+  crit:    { name: '치명 확률', emoji: '🎯', cost0: 40, costGrow: 1.22, max: 45,    desc: '치명타가 터질 확률' },
+  critDmg: { name: '치명 피해', emoji: '💥', cost0: 40, costGrow: 1.18, max: 99999, desc: '치명타 때 몇 배로 때리나' }
 };
 
 HM.RAR = [
@@ -54,7 +58,7 @@ HM.CARDS = [
   { id: 'bleed2',  side: '혈', rar: 1, emoji: '🩸', name: '혈조',       desc: '출혈 +10% · 출혈 피해 +50% · 최대 체력 -5%', tag: '출혈', fx: s => { s.bleed += 0.1; s.bleedMul *= 1.5; s.hpMul *= 0.95; } },
   { id: 'rage',    side: '혈', rar: 1, emoji: '😡', name: '광폭',       desc: '체력 절반 아래면 공격력 +60% · 최대 체력 -5%', fx: s => { s.berserk += 0.6; s.hpMul *= 0.95; } },
   { id: 'sea',     side: '혈', rar: 2, emoji: '🌊', name: '혈해',       desc: '공격 속도 +30% · 초당 체력 1% 깎임', fx: s => { s.spdMul *= 1.3; s.drain += 0.01; } },
-  { id: 'mark',    side: '혈', rar: 2, emoji: '💢', name: '혈인',       desc: '20% 확률 치명타 (3배) · 최대 체력 -10%', fx: s => { s.crit += 0.2; s.hpMul *= 0.9; } },
+  { id: 'mark',    side: '혈', rar: 2, emoji: '💢', name: '혈인',       desc: '치명 확률 +20% · 치명 피해 +50% · 최대 체력 -10%', fx: s => { s.crit += 0.2; s.critMul += 0.5; s.hpMul *= 0.9; } },
   { id: 'bleed3',  side: '혈', rar: 2, emoji: '🌧', name: '혈우',       desc: '출혈 +40% · 출혈 걸린 적에게 피해 +15% · 최대 체력 -10%', tag: '출혈', fx: s => { s.bleed += 0.4; s.bleedAmp += 0.15; s.hpMul *= 0.9; } },
   { id: 'demon',   side: '혈', rar: 3, emoji: '😈', name: '혈마강림',   desc: '공격력 +150% · 최대 체력 -25%', max: 1, fx: s => { s.atkMul *= 2.5; s.hpMul *= 0.75; } },
   // 조합 카드 (뽑기에 그냥은 안 나옴)

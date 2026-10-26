@@ -146,3 +146,18 @@ textarea { width: 100%; height: 90px; background: #0008; color: var(--txt); bord
 .adBox .sec { font-size: 40px; font-weight: 800; color: var(--gold); }
 
 #toast { position: fixed; left: 50%; top: 18%; transform: translateX(-50%); background: #000d; color: #fff; padding: 10px 16px; border-radius: 18px; font-size: 14px; z-index: 20; max-width: 88%; text-align: center; }
+
+/* 능력치·설명·도감 */
+.mult button.info { background: #3a1420; color: var(--txt); }
+.mini.dim { opacity: .35; filter: grayscale(.7); }
+.mini .tg { font-size: 11px; margin: 2px 0; }
+.mini small { color: var(--dim); }
+.bookH { text-align: left; margin: 14px 0 8px; font-size: 14px; color: var(--gold); }
+.help { text-align: left; font-size: 13px; line-height: 1.7; background: var(--card); border-radius: 10px; padding: 10px 12px; }
+.stats { text-align: left; }
+.stats .st { display: flex; align-items: center; gap: 10px; padding: 7px 4px; border-bottom: 1px solid var(--line); }
+.stats .ic { font-size: 20px; width: 26px; text-align: center; }
+.stats .nm { flex: 1; font-size: 14px; }
+.stats .nm small { display: block; color: var(--dim); font-size: 11px; }
+.stats b { font-size: 15px; color: var(--gold); white-space: nowrap; }
+#hero { cursor: pointer; }
