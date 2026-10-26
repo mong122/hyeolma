@@ -167,3 +167,16 @@ textarea { width: 100%; height: 90px; background: #0008; color: var(--txt); bord
 #app.wide #stage { flex-basis: 0; border: 0; }
 #app.wide #skills { display: none; }
 #app.wide #btnExpand { color: var(--gold); }
+
+/* 층 이동 */
+#tFloor { background: none; font-weight: 700; font-size: 15px; padding: 2px 6px; border-radius: 8px; }
+#tFloor::after { content: ' ▾'; color: var(--dim); font-size: 12px; }
+#btnFloor { position: absolute; left: 8px; bottom: 8px; padding: 7px 11px; border-radius: 16px; background: #000a; font-size: 13px; font-weight: 700; }
+.step { display: flex; gap: 6px; align-items: center; justify-content: center; margin: 10px 0; }
+.step button { padding: 10px 10px; border-radius: 10px; background: var(--card); font-weight: 700; min-width: 46px; }
+.step input { width: 80px; padding: 10px 4px; text-align: center; font-size: 20px; font-weight: 800; background: #0008; color: var(--txt); border: 1px solid var(--line); border-radius: 10px; }
+.seg { display: flex; gap: 6px; margin: 6px 0 12px; }
+.seg button { flex: 1; padding: 10px 6px; border-radius: 10px; background: var(--card); font-size: 13px; color: var(--dim); }
+.seg button.on { background: var(--gold); color: #2a1300; font-weight: 800; }
+.optH { text-align: left; font-size: 13px; color: var(--txt); font-weight: 700; margin-top: 14px; }
+.optH small { display: block; color: var(--dim); font-weight: 400; font-size: 12px; }

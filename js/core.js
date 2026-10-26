@@ -28,6 +28,8 @@ var HM = (typeof HM !== 'undefined') ? HM : {};
       cards: {}, pending: 0, seen: {},
       autoSkill: { s1: false, s2: false },
       talked: {}, lastSave: Date.now(),
+      goal: 2, hold: false,                       // 멈췄을 때 다시 갈 층 · 내가 골라 머무는 중인지
+      opt: { autoBoss: true, onFail: 'down' },    // 보스 자동 도전 · 지면 down(한 층 아래) / stay(이 층에 머묾)
       rec: { kills: 0, playSec: 0, cardsPicked: 0 }
     };
   };
@@ -171,8 +173,11 @@ var HM = (typeof HM !== 'undefined') ? HM : {};
     ev.push({ t: 'hit', d: r.d, crit: r.crit, kind });
   }
 
+  // 지면: 다시 갈 층을 기억하고, 고른 방식대로 이 층에 머물거나 한 층 내려가 파밍
   function fail(st, b, ev, why) {
-    st.floor = Math.max(1, st.floor - 1);
+    const at = st.floor;
+    if (!st.hold) st.goal = at;  // 내가 골라 머무는 중이면 머물기는 그대로
+    if (st.opt.onFail === 'down' || HM.isBoss(at)) st.floor = Math.max(1, at - 1);
     st.kills = 0; st.autoUp = false;
     b.mon = null; b.spawnT = 0.8; b.hp = b.s.maxHp;
     ev.push({ t: 'fail', why });
@@ -245,12 +250,24 @@ var HM = (typeof HM !== 'undefined') ? HM : {};
       if (m.boss) {
         st.kills = 0;
         ev.push({ t: 'bossDown', f: st.floor });
-        st.floor++; st.autoUp = true;
+        st.floor++; st.autoUp = true; st.hold = false;
       } else {
         st.kills++;
         if (st.kills >= B.killsPerFloor) {
           st.kills = 0;
-          if (st.autoUp) st.floor++;
+          if (st.autoUp) {
+            // 보스 자동 도전을 껐으면 보스 앞에서 멈추고 기다림
+            if (HM.isBoss(st.floor + 1) && !st.opt.autoBoss) {
+              st.autoUp = false; st.goal = st.floor + 1;
+              ev.push({ t: 'bossWait', f: st.goal });
+            } else st.floor++;
+          } else if (!st.hold && st.opt.autoBoss) {
+            // 보스 자동 도전: 한 바퀴(한 층 몫) 파밍한 뒤 저절로 다시 도전
+            if (st.goal <= st.floor) st.goal = st.floor + 1; // 머문 층을 한 바퀴 깼으면 다음 층으로
+            HM.challenge(st, b);
+            ev.push({ t: 'retry', f: st.floor });
+            return;
+          }
         }
       }
       st.maxFloor = Math.max(st.maxFloor, st.floor);
@@ -270,8 +287,17 @@ var HM = (typeof HM !== 'undefined') ? HM : {};
 
   // 다시 도전 (아래 층에서 머물던 걸 풀고 다음 층으로)
   HM.challenge = function (st, b) {
-    st.autoUp = true; st.kills = 0; st.floor++;
+    // 다시 갈 층이 위에 있으면 거기로, 이 층에 머물러 있었으면 이 층부터 다시 올라감
+    if (st.goal > st.floor) st.floor = Math.min(st.goal, st.maxFloor + 1);
+    st.autoUp = true; st.hold = false; st.kills = 0;
     st.maxFloor = Math.max(st.maxFloor, st.floor);
+    b.mon = null; b.spawnT = 0.3; b.hp = b.s.maxHp;
+  };
+
+  // 층 고르기 (1층 ~ 최고층). hold = 그 층에 머물며 파밍, 아니면 거기서부터 올라감
+  HM.goFloor = function (st, b, f, hold) {
+    st.floor = Math.max(1, Math.min(st.maxFloor, Math.floor(f)));
+    st.kills = 0; st.hold = !!hold; st.autoUp = !hold; st.goal = st.floor + 1;
     b.mon = null; b.spawnT = 0.3; b.hp = b.s.maxHp;
   };
 
@@ -313,6 +339,7 @@ var HM = (typeof HM !== 'undefined') ? HM : {};
     for (const k in base.up) if (st.up[k] === undefined) st.up[k] = 0;
     for (const k in base.rec) if (st.rec[k] === undefined) st.rec[k] = 0;
     for (const id in st.cards) st.seen[id] = 1;
+    for (const k in base.opt) if (st.opt[k] === undefined) st.opt[k] = base.opt[k];
     for (const k in base.autoSkill) if (st.autoSkill[k] === undefined) st.autoSkill[k] = false;
     return st;
   };

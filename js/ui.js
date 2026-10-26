@@ -309,7 +309,7 @@
   function helpModal(box) {
     const sec = (t, body) => `<h4 class="bookH">${t}</h4><div class="help">${body}</div>`;
     box.innerHTML = `<h2>📖 게임 설명</h2>
-      ${sec('🏯 층과 보스', `혈마가 혼자 싸워요. 한 층에서 ${HM.B.killsPerFloor}마리를 잡으면 다음 층.<br>10층마다 보스 — ${HM.B.bossTime}초 안에 못 잡거나 쓰러지면 한 층 아래로 내려가 그 층에서 계속 수련해요.<br>세졌다 싶으면 무대 아래 <b>⏫ 다시 도전</b>.`)}
+      ${sec('🏯 층과 보스', `혈마가 혼자 싸워요. 한 층에서 ${HM.B.killsPerFloor}마리를 잡으면 다음 층.<br>10층마다 보스 — ${HM.B.bossTime}초 안에 잡아야 해요.<br>지거나 쓰러지면 (고른 대로) 그 층이나 한 층 아래에서 파밍. 세졌다 싶으면 무대 아래 <b>⏫ 다시 도전</b>.<br><b>🏯 층 이동</b> (무대 왼쪽 아래 · 맨 위 층 숫자): 최고층까지 아무 층이나 골라 머물거나 거기서부터 올라가기 · 보스 자동 도전 켬/끔 · 지면 어디서 파밍할지`)}
       ${sec('💪 강화 (은자)', Object.values(HM.UPS).map(u => `${u.emoji} <b>${u.name}</b> — ${u.desc}${u.max < 9999 ? ` (최대 ${u.max}번)` : ''}`).join('<br>') + '<br>×10·최대 로 한 번에 · 꾹 누르면 계속')}
       ${sec('🃏 레벨업 카드', `레벨이 오를 때마다 3장 중 1장. 이번 판에만 유효해요.<br>🟦 <b>정파 무공</b> = 안전·꾸준 · 🟥 <b>혈공</b> = 세지만 체력을 깎음<br>등급: <span class="rt r0">일반</span> · <span class="rt r1">희귀</span> · <span class="rt r2">영웅</span> · <span class="rt r3">전설</span><br>✨ 조합: 출혈 카드 3장 → 💥 출혈 폭발<br>📺 광고 보고 다시 뽑기 (카드 한 번에 한 번)`)}
       ${sec('🩸 스킬', Object.values(HM.SKILLS).map(k => `${k.emoji} <b>${k.name}</b> — ${k.desc} (${k.cd}초마다)`).join('<br>') + '<br>"자동" 을 켜면 알아서 써요 (호신강기는 체력 60% 아래에서)')}
@@ -409,7 +409,12 @@
         if (t && !st.talked[e.f + 'a']) { st.talked[e.f + 'a'] = 1; talkModal(t.after, true); }
       } else if (e.t === 'fail') {
         drawMob();
-        toast(e.why === 'time' ? '⏰ 보스를 못 잡았어요… 한 층 아래에서 수련' : '💫 쓰러졌어요… 한 층 아래에서 수련', 2200);
+        const where = `${st.floor}층에서 수련`;
+        toast((e.why === 'time' ? '⏰ 보스를 못 잡았어요… ' : '💫 쓰러졌어요… ') + where + (st.opt.autoBoss && !st.hold ? ' (한 바퀴 뒤 자동 도전)' : ''), 2400);
+      } else if (e.t === 'bossWait') {
+        toast(`👹 ${e.f}층 보스 앞에서 기다려요 — 준비되면 "보스 도전"`, 2400);
+      } else if (e.t === 'retry') {
+        drawMob(); toast(`🔁 ${st.floor}층 자동 다시 도전!`);
       } else if (e.t === 'skill') {
         if (e.key === 's2') flash($('hero'), 'inv', 3000);
       }
@@ -436,6 +441,7 @@
     [...dots.children].forEach((d, i) => d.classList.toggle('on', i < st.kills));
     dots.hidden = boss;
     $('btnChallenge').hidden = st.autoUp;
+    if (!st.autoUp) $('btnChallenge').textContent = challengeLabel();
     for (const k in HM.SKILLS) {
       const left = b.cd[k], full = HM.SKILLS[k].cd;
       $('cd_' + k).style.background = left > 0 ? `conic-gradient(#000a ${left / full * 360}deg, transparent 0)` : 'none';
@@ -456,11 +462,46 @@
   }
   function bigLabel() {
     const on = $('app').classList.contains('wide');
-    $('btnExpand').textContent = on ? `▼ 무대 보기 · ${st.floor}층${st.autoUp ? '' : ' (도전 멈춤)'}` : '▲ 크게 보기';
+    $('btnExpand').textContent = on ? `▼ 무대 보기 · ${st.floor}층${st.autoUp ? '' : st.hold ? ' (파밍 중)' : HM.isBoss(st.goal) && st.goal > st.floor ? ' (보스 대기)' : ' (도전 멈춤)'}` : '▲ 크게 보기';
   }
   $('btnExpand').onclick = () => setBig(!$('app').classList.contains('wide'));
   try { if (localStorage.getItem('hyeolma.big')) setBig(true); } catch (e) {}
-  $('btnChallenge').onclick = () => { HM.challenge(st, b); drawMob(); toast(`⏫ ${st.floor}층 다시 도전!`); };
+  function challengeLabel() {
+    if (st.hold) return '⏫ 다시 올라가기';
+    if (st.goal > st.floor && HM.isBoss(st.goal)) return `👹 ${st.goal}층 보스 도전`;
+    return '⏫ 다시 도전';
+  }
+  $('btnChallenge').onclick = () => { HM.challenge(st, b); drawMob(); toast(`⏫ ${st.floor}층 도전!`); };
+  $('tFloor').onclick = $('btnFloor').onclick = () => showModal(floorModal);
+
+  // ── 층 이동 · 전투 방식 창
+  function floorModal(box) {
+    let f = st.floor;
+    const draw = () => {
+      box.innerHTML = `<h2>🏯 층 이동</h2><p>지금 ${st.floor}층 · 최고 ${st.maxFloor}층 (최고층까지 고를 수 있어요)</p>
+        <div class="step"><button data-d="-10">-10</button><button data-d="-1">-1</button>
+          <input id="fIn" type="number" inputmode="numeric" min="1" max="${st.maxFloor}" value="${f}">
+          <button data-d="1">+1</button><button data-d="10">+10</button></div>
+        <div class="step"><button data-to="1">1층</button><button data-to="${st.maxFloor}">최고층</button></div>
+        <button class="big gold" id="fHold">🏯 ${f}층에 머물며 파밍</button>
+        <button class="big" id="fUp">⏫ ${f}층부터 올라가기</button>
+        <div class="optH">👹 보스 자동 도전<small>켜면 보스 층에 바로 들어가고, 지면 한 바퀴(${HM.B.killsPerFloor}마리) 파밍한 뒤 저절로 다시 도전 · 끄면 보스 앞에서 기다림</small></div>
+        <div class="seg"><button data-ab="1" class="${st.opt.autoBoss ? 'on' : ''}">켬</button><button data-ab="0" class="${st.opt.autoBoss ? '' : 'on'}">끔</button></div>
+        <div class="optH">💫 지거나 쓰러지면<small>보스에게 지면 어느 쪽이든 보스 바로 앞 층으로</small></div>
+        <div class="seg"><button data-of="stay" class="${st.opt.onFail === 'stay' ? 'on' : ''}">이 층에서 파밍</button><button data-of="down" class="${st.opt.onFail === 'down' ? 'on' : ''}">한 층 내려가서 파밍</button></div>
+        <button class="big dim" id="cl">닫기</button>`;
+      const set = v => { f = Math.max(1, Math.min(st.maxFloor, v | 0 || 1)); draw(); };
+      box.querySelectorAll('[data-d]').forEach(el => el.onclick = () => set(f + +el.dataset.d));
+      box.querySelectorAll('[data-to]').forEach(el => el.onclick = () => set(+el.dataset.to));
+      $('fIn').onchange = () => set(+$('fIn').value);
+      box.querySelectorAll('[data-ab]').forEach(el => el.onclick = () => { st.opt.autoBoss = el.dataset.ab === '1'; draw(); });
+      box.querySelectorAll('[data-of]').forEach(el => el.onclick = () => { st.opt.onFail = el.dataset.of; draw(); });
+      $('fHold').onclick = () => { HM.goFloor(st, b, f, true); drawMob(); toast(`🏯 ${st.floor}층에서 파밍`); closeModal(); };
+      $('fUp').onclick = () => { HM.goFloor(st, b, f, false); drawMob(); toast(`⏫ ${st.floor}층부터 올라가요`); closeModal(); };
+      $('cl').onclick = closeModal;
+    };
+    draw();
+  }
 
   // ── 돌아가는 고리
   let last = performance.now();
