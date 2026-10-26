@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1a0508">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>혈마 키우기</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <!-- 맨 위 줄 -->
+  <header id="top">
+    <div id="tCycle">혈마 · 1회차</div>
+    <div id="tFloor">🏯 1층</div>
+    <div id="tSilver">🪙 0</div>
+  </header>
+  <div id="lvBar"><span id="lvTxt">Lv.1</span><div class="bar"><i id="expFill"></i></div></div>
+
+  <!-- 위 절반: 싸우는 무대 -->
+  <section id="stage" class="st1">
+    <div id="bg"><span class="bg1">🏯</span><span class="bg2">⛰️</span><span class="bg3">🔥</span><span class="bg4">🔥</span></div>
+    <div id="stageName">혈교 수련장</div>
+    <div id="bossBar" hidden><span id="bossTxt">보스 30초</span><div class="bar"><i id="bossFill"></i></div></div>
+    <div id="floorDots"></div>
+    <div id="hero" class="unit"><div class="bar hp"><i id="heroHp"></i></div><div class="body">🧒</div><div class="aura"></div></div>
+    <div id="mob" class="unit"><div class="mobName" id="mobName"></div><div class="bar hp"><i id="mobHp"></i></div><div class="body" id="mobBody"></div></div>
+    <div id="fx"></div>
+    <button id="btnChallenge" hidden>⏫ 다시 도전</button>
+    <button id="btnPending" hidden>🃏 카드 고르기</button>
+  </section>
+
+  <!-- 아래 절반: 단추 -->
+  <section id="panel">
+    <div id="skills"></div>
+    <div id="tabBody"></div>
+    <nav id="tabs">
+      <button data-tab="up" class="on">💪<b>강화</b></button>
+      <button data-tab="cards">🃏<b>카드</b></button>
+      <button data-tab="dungeon">⛩️<b>던전</b></button>
+      <button data-tab="set">⚙️<b>설정</b></button>
+    </nav>
+  </section>
+</div>
+
+<!-- 겹쳐 뜨는 창 -->
+<div id="modal" hidden><div id="modalBox"></div></div>
+<div id="toast" hidden></div>
+
+<script src="js/data.js"></script>
+<script src="js/core.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
