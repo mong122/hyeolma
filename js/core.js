@@ -36,7 +36,7 @@ var HM = (typeof HM !== 'undefined') ? HM : {};
 
   // ── 지금 능력치 계산 (강화 + 레벨 + 카드)
   HM.calc = function (st) {
-    const s = { atkMul: 1, hpMul: 1, spdMul: 1, regen: 0, taken: 1, silverMul: 1, expMul: 1,
+    const s = { atkMul: 1, hpMul: 1, spdMul: 1, regen: 0, dr: 0, silverMul: 1, expMul: 1,
       dbl: 0, crit: B.critBase, critMul: B.critMulBase, steal: 0, bleed: 0, bleedMul: 1, bleedAmp: 0, berserk: 0, drain: 0 };
     for (const id in st.cards) {
       const c = HM.CARD[id];
@@ -48,8 +48,10 @@ var HM = (typeof HM !== 'undefined') ? HM : {};
     s.atk = B.baseAtk * (1 + B.upLin * L.atk) * Math.pow(B.upPow, L.atk) * lv * s.atkMul;
     s.maxHp = B.baseHp * (1 + B.upLin * L.hp) * Math.pow(B.upPow, L.hp) * lv * Math.max(0.1, s.hpMul);
     s.spd = Math.min(6, B.baseSpd * (1 + 0.05 * L.spd) * s.spdMul);
-    s.taken /= 1 + 0.01 * L.def;  // 100번 다 올려야 받는 피해 절반
-    s.crit = Math.min(0.9, s.crit + 0.01 * L.crit);
+    // 한계: 받는 피해 감소·치명 확률은 강화+카드 합쳐서 최대 50%
+    s.dr = Math.min(B.drCap, s.dr + 0.005 * L.def);
+    s.taken = 1 - s.dr;
+    s.crit = Math.min(B.critCap, s.crit + 0.01 * L.crit);
     s.critMul += 0.1 * L.critDmg;
     s.dbl = Math.min(0.9, s.dbl);
     return s;
@@ -336,7 +338,7 @@ var HM = (typeof HM !== 'undefined') ? HM : {};
   HM.fixState = function (st) {
     const base = HM.newState();
     for (const k in base) if (st[k] === undefined) st[k] = base[k];
-    for (const k in base.up) if (st.up[k] === undefined) st.up[k] = 0;
+    for (const k in base.up) st.up[k] = Math.min(st.up[k] || 0, HM.UPS[k].max); // 한계가 줄었으면 맞춰 줌
     for (const k in base.rec) if (st.rec[k] === undefined) st.rec[k] = 0;
     for (const id in st.cards) st.seen[id] = 1;
     for (const k in base.opt) if (st.opt[k] === undefined) st.opt[k] = base.opt[k];

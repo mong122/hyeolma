@@ -172,7 +172,7 @@
   function statText(key, s) {
     if (key === 'atk') return fmt(s.atk);
     if (key === 'hp') return fmt(s.maxHp);
-    if (key === 'def') return '피해 -' + Math.round((1 - s.taken) * 100) + '%';
+    if (key === 'def') return '피해 -' + Math.round(s.dr * 100) + '%';
     if (key === 'crit') return Math.round(s.crit * 100) + '%';
     if (key === 'critDmg') return Math.round(s.critMul * 100) + '%';
     return s.spd.toFixed(2) + '회/초';
@@ -282,9 +282,9 @@
       ['⚔️', '초당 피해 (대략)', fmt(HM.dps(s)), '공격력·속도·치명·두 번 공격·출혈을 합친 값'],
       ['🗡', '공격력', fmt(s.atk), '한 번 때릴 때 피해'],
       ['❤️', '체력', fmt(b.hp) + ' / ' + fmt(s.maxHp), '0이 되면 쓰러져 한 층 아래로'],
-      ['🛡', '받는 피해', '-' + pct(1 - s.taken), '방어력 강화·카드로 줄어요'],
+      ['🛡', '받는 피해', '-' + pct(s.dr), `방어력 강화·카드로 줄어요 (최대 ${pct(HM.B.drCap)})`],
       ['💨', '공격 속도', s.spd.toFixed(2) + '회/초', '최대 6회/초'],
-      ['🎯', '치명 확률', pct(s.crit), '최대 90%'],
+      ['🎯', '치명 확률', pct(s.crit), `강화·카드 합쳐서 최대 ${pct(HM.B.critCap)}`],
       ['💥', '치명 피해', pct(s.critMul), '치명타 때 공격력의 몇 배'],
       s.dbl && ['⚔️', '두 번 공격', pct(s.dbl), '때릴 때 한 번 더 때릴 확률'],
       s.regen && ['🧘', '체력 회복', pct(s.regen) + '/초', '최대 체력 기준'],

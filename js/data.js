@@ -1,7 +1,7 @@
 // 혈마 키우기 — 숫자·카드·몬스터 자료 (화면과 상관없는 것만)
 var HM = (typeof HM !== 'undefined') ? HM : {};
 
-HM.VERSION = '0.1.4';
+HM.VERSION = '0.1.5';
 
 // 균형 숫자 (여기만 고치면 게임 빠르기가 바뀜)
 HM.B = {
@@ -19,6 +19,7 @@ HM.B = {
   offlineMaxH: 8, offlineEff: 0.5,              // 방치: 최대 시간 · 켜 둔 때 대비 몇 배
   upLin: 0.1, upPow: 1.03,                     // 강화 한 번에 늘어나는 정도
   critBase: 0.05, critMulBase: 1.5,             // 처음 치명 확률·치명 피해 배수
+  critCap: 0.5, drCap: 0.5,                     // 한계: 치명 확률 최대 50% · 받는 피해 감소 최대 50% (강화+카드 합쳐서)
   rarW: [60, 28, 10, 2]                         // 카드 등급 확률 (일반·희귀·영웅·전설)
 };
 
@@ -26,9 +27,9 @@ HM.B = {
 HM.UPS = {
   atk:     { name: '공격력',    emoji: '🗡', cost0: 8,  costGrow: 1.15, max: 99999, desc: '한 번 때릴 때 피해' },
   hp:      { name: '체력',      emoji: '❤️', cost0: 8,  costGrow: 1.15, max: 99999, desc: '0이 되면 쓰러져요' },
-  def:     { name: '방어력',    emoji: '🛡', cost0: 30, costGrow: 1.2,  max: 100,   desc: '받는 피해가 줄어요' },
+  def:     { name: '방어력',    emoji: '🛡', cost0: 30, costGrow: 1.2,  max: 60,    desc: '받는 피해 -0.5%씩 (강화로 최대 30%)' },
   spd:     { name: '공격 속도', emoji: '💨', cost0: 30, costGrow: 1.3,  max: 40,    desc: '1초에 몇 번 때리나' },
-  crit:    { name: '치명 확률', emoji: '🎯', cost0: 200, costGrow: 1.45, max: 45,    desc: '치명타가 터질 확률' },
+  crit:    { name: '치명 확률', emoji: '🎯', cost0: 200, costGrow: 1.45, max: 25,    desc: '치명 확률 +1%씩 (강화로 최대 30%)' },
   critDmg: { name: '치명 피해', emoji: '💥', cost0: 150, costGrow: 1.3,  max: 99999, desc: '치명타 때 몇 배로 때리나' }
 };
 
@@ -47,9 +48,9 @@ HM.CARDS = [
   { id: 'greed',   side: '정', rar: 1, emoji: '💰', name: '전낭 수련',   desc: '은자 +30%', fx: s => { s.silverMul *= 1.3; } },
   { id: 'wisdom',  side: '정', rar: 1, emoji: '📜', name: '깨우침',     desc: '경험치 +30%', fx: s => { s.expMul *= 1.3; } },
   { id: 'chain',   side: '정', rar: 1, emoji: '⚔️', name: '연환검',     desc: '20% 확률로 두 번 공격', fx: s => { s.dbl += 0.2; } },
-  { id: 'diamond', side: '정', rar: 1, emoji: '🛡', name: '금강불괴',   desc: '받는 피해 -15%', fx: s => { s.taken *= 0.85; } },
+  { id: 'diamond', side: '정', rar: 1, emoji: '🛡', name: '금강불괴',   desc: '받는 피해 -15%', fx: s => { s.dr += 0.15; } },
   { id: 'plum',    side: '정', rar: 2, emoji: '🌸', name: '매화검법',   desc: '공격력 +40%', fx: s => { s.atkMul *= 1.4; } },
-  { id: 'taiji',   side: '정', rar: 2, emoji: '☯️', name: '태극심법',   desc: '초당 체력 2% 회복 · 받는 피해 -10%', fx: s => { s.regen += 0.02; s.taken *= 0.9; } },
+  { id: 'taiji',   side: '정', rar: 2, emoji: '☯️', name: '태극심법',   desc: '초당 체력 2% 회복 · 받는 피해 -10%', fx: s => { s.regen += 0.02; s.dr += 0.1; } },
   { id: 'best',    side: '정', rar: 3, emoji: '🌟', name: '천하제일검', desc: '공격력 +80% · 공격 속도 +20%', max: 1, fx: s => { s.atkMul *= 1.8; s.spdMul *= 1.2; } },
   // 혈공 (세지만 체력 깎음)
   { id: 'blood',   side: '혈', rar: 0, emoji: '🔥', name: '혈기',       desc: '공격력 +30% · 최대 체력 -10%', fx: s => { s.atkMul *= 1.3; s.hpMul *= 0.9; } },
