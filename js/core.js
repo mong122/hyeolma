@@ -48,7 +48,7 @@ var HM = (typeof HM !== 'undefined') ? HM : {};
     s.atk = B.baseAtk * (1 + B.upLin * L.atk) * Math.pow(B.upPow, L.atk) * lv * s.atkMul;
     s.maxHp = B.baseHp * (1 + B.upLin * L.hp) * Math.pow(B.upPow, L.hp) * lv * Math.max(0.1, s.hpMul);
     s.spd = Math.min(6, B.baseSpd * (1 + 0.05 * L.spd) * s.spdMul);
-    s.taken /= 1 + 0.03 * L.def;
+    s.taken /= 1 + 0.01 * L.def;  // 100번 다 올려야 받는 피해 절반
     s.crit = Math.min(0.9, s.crit + 0.01 * L.crit);
     s.critMul += 0.1 * L.critDmg;
     s.dbl = Math.min(0.9, s.dbl);

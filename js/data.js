@@ -1,7 +1,7 @@
 // 혈마 키우기 — 숫자·카드·몬스터 자료 (화면과 상관없는 것만)
 var HM = (typeof HM !== 'undefined') ? HM : {};
 
-HM.VERSION = '0.1.3';
+HM.VERSION = '0.1.4';
 
 // 균형 숫자 (여기만 고치면 게임 빠르기가 바뀜)
 HM.B = {
@@ -26,7 +26,7 @@ HM.B = {
 HM.UPS = {
   atk:     { name: '공격력',    emoji: '🗡', cost0: 8,  costGrow: 1.15, max: 99999, desc: '한 번 때릴 때 피해' },
   hp:      { name: '체력',      emoji: '❤️', cost0: 8,  costGrow: 1.15, max: 99999, desc: '0이 되면 쓰러져요' },
-  def:     { name: '방어력',    emoji: '🛡', cost0: 15, costGrow: 1.16, max: 99999, desc: '받는 피해가 줄어요' },
+  def:     { name: '방어력',    emoji: '🛡', cost0: 30, costGrow: 1.2,  max: 100,   desc: '받는 피해가 줄어요' },
   spd:     { name: '공격 속도', emoji: '💨', cost0: 30, costGrow: 1.3,  max: 40,    desc: '1초에 몇 번 때리나' },
   crit:    { name: '치명 확률', emoji: '🎯', cost0: 200, costGrow: 1.45, max: 45,    desc: '치명타가 터질 확률' },
   critDmg: { name: '치명 피해', emoji: '💥', cost0: 150, costGrow: 1.3,  max: 99999, desc: '치명타 때 몇 배로 때리나' }
